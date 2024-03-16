@@ -7,7 +7,6 @@ import cloudpickle
 import gzip
 import os
 import dask
-import dask_awkward as dak
 from distributed import Client
 
 from coffea.nanoevents import NanoAODSchema
@@ -200,101 +199,9 @@ if __name__ == '__main__':
         print('pretending...')
         exit()
 
-    # Extract the list of all WCs, as long as we haven't already specified one.
-    if len(wc_lst) == 0:
-        for k in samplesdict.keys():
-            for wc in samplesdict[k]['WCnames']:
-                if wc not in wc_lst:
-                    wc_lst.append(wc)
-
-    if len(wc_lst) > 0:
-        # Yes, why not have the output be in correct English?
-        if len(wc_lst) == 1:
-            wc_print = wc_lst[0]
-        elif len(wc_lst) == 2:
-            wc_print = wc_lst[0] + ' and ' + wc_lst[1]
-        else:
-            wc_print = ', '.join(wc_lst[:-1]) + ', and ' + wc_lst[-1]
-            print('Wilson Coefficients: {}.'.format(wc_print))
-    else:
-        print('No Wilson coefficients specified')
 
     processor_instance = wwz4l.AnalysisProcessor(samplesdict,wc_lst,hist_lst,ecut_threshold,do_errors,do_systs,split_lep_flavor,skip_sr,skip_cr)
 
-    if executor == "work_queue":
-        executor_args = {
-            'master_name': '{}-workqueue-coffea'.format(os.environ['USER']),
-
-            # find a port to run work queue in this range:
-            'port': port,
-
-            'debug_log': 'debug.log',
-            'transactions_log': 'tr.log',
-            'stats_log': 'stats.log',
-            'tasks_accum_log': 'tasks.log',
-
-            'environment_file': remote_environment.get_environment(
-                extra_pip=["mt2","xgboost"],
-                extra_pip_local = {"ewkcoffea": ["ewkcoffea", "setup.py"]},
-            ),
-            'extra_input_files': ["wwz4l.py"],
-
-            'retries': 5,
-
-            # use mid-range compression for chunks results. 9 is the default for work
-            # queue in coffea. Valid values are 0 (minimum compression, less memory
-            # usage) to 16 (maximum compression, more memory usage).
-            'compression': 9,
-
-            # automatically find an adequate resource allocation for tasks.
-            # tasks are first tried using the maximum resources seen of previously ran
-            # tasks. on resource exhaustion, they are retried with the maximum resource
-            # values, if specified below. if a maximum is not specified, the task waits
-            # forever until a larger worker connects.
-            'resource_monitor': True,
-            'resources_mode': 'auto',
-
-            # this resource values may be omitted when using
-            # resources_mode: 'auto', but they do make the initial portion
-            # of a workflow run a little bit faster.
-            # Rather than using whole workers in the exploratory mode of
-            # resources_mode: auto, tasks are forever limited to a maximum
-            # of 8GB of mem and disk.
-            #
-            # NOTE: The very first tasks in the exploratory
-            # mode will use the values specified here, so workers need to be at least
-            # this large. If left unspecified, tasks will use whole workers in the
-            # exploratory mode.
-            # 'cores': 1,
-            # 'disk': 8000,   #MB
-            # 'memory': 10000, #MB
-
-            # control the size of accumulation tasks. Results are
-            # accumulated in groups of size chunks_per_accum, keeping at
-            # most chunks_per_accum at the same time in memory per task.
-            'chunks_per_accum': 25,
-            'chunks_accum_in_mem': 2,
-
-            # terminate workers on which tasks have been running longer than average.
-            # This is useful for temporary conditions on worker nodes where a task will
-            # be finish faster is ran in another worker.
-            # the time limit is computed by multipliying the average runtime of tasks
-            # by the value of 'fast_terminate_workers'.  Since some tasks can be
-            # legitimately slow, no task can trigger the termination of workers twice.
-            #
-            # warning: small values (e.g. close to 1) may cause the workflow to misbehave,
-            # as most tasks will be terminated.
-            #
-            # Less than 1 disables it.
-            'fast_terminate_workers': 0,
-
-            # print messages when tasks are submitted, finished, etc.,
-            # together with their resource allocation and usage. If a task
-            # fails, its standard output is also printed, so we can turn
-            # off print_stdout for all tasks.
-            'verbose': True,
-            'print_stdout': False,
-        }
 
     # Run the processor and get the output
     t_start = time.time()
@@ -354,6 +261,7 @@ if __name__ == '__main__':
         )
 
         # Check columns to be read
+        #import dask_awkward as dak
         #print("\nRunning necessary_columns...")
         #columns_read = dak.necessary_columns(histos_to_compute[list(histos_to_compute.keys())[0]])
         #print(columns_read)
