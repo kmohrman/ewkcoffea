@@ -297,7 +297,7 @@ if __name__ == '__main__':
         }
 
     # Run the processor and get the output
-    tstart = time.time()
+    t_start = time.time()
 
     ####################################3
     ### coffea2023 ###
@@ -315,53 +315,57 @@ if __name__ == '__main__':
 
 
     #### Try with distributed Client ####
-    t_beforepreprocess = time.time()
 
+    t_before_with_Client_as_client = time.time()
     #with dask.config.set({"scheduler": "sync"}): # Single thread
-    #with Client() as _: # distributed Client scheduler
-    #with Client() as client:
-    with Client(n_workers=8, threads_per_worker=1) as client:
+    #with Client(n_workers=8, threads_per_worker=1) as client:
+    with Client() as client:
 
         # Run preprocess
         print("\nRunning preprocess...")
+        t_before_preprocess = time.time()
         dataset_runnable, dataset_updated = preprocess(
             fileset,
             step_size=50_000,
             align_clusters=False,
             files_per_batch=1,
-            save_form=True,
+            save_form=False,
         )
         dataset_runnable = filter_files(dataset_runnable)
 
-        t_beforeapplytofileset = time.time()
+
+        # Dump to a json
+        #with gzip.open("dataset_runnable_test.json.gz", "wt") as fout:
+        #    json.dump(dataset_runnable, fout)
+        #exit()
+        # Or load a json
+        #with gzip.open("dataset_runnable_test.json.gz", "r") as f:
+        #    dataset_runnable = json.load(f)
+
+
+        t_before_applytofileset = time.time()
         # Run apply_to_fileset
         print("\nRunning apply_to_fileset...")
         histos_to_compute, reports = apply_to_fileset(
             processor_instance,
             dataset_runnable,
             uproot_options={"allow_read_errors_with_report": True},
-            parallelize_with_dask=True,
+            #parallelize_with_dask=True,
         )
-
-        print("DONE with apply to fileset")
-        exit()
 
         # Check columns to be read
         #print("\nRunning necessary_columns...")
         #columns_read = dak.necessary_columns(histos_to_compute[list(histos_to_compute.keys())[0]])
         #print(columns_read)
 
-        t_beforecompute = time.time()
         # Compute
+        t_before_compute = time.time()
         print("\nRunning compute...")
-        output_futures, report_futures = {}, {}
-        for key in histos_to_compute:
-            output_futures[key], report_futures[key] = client.compute((histos_to_compute[key], reports[key],))
-
-        coutputs, creports = client.gather((output_futures, report_futures,))
+        coutputs, creports = dask.compute(histos_to_compute, reports)
 
 
 
+    #########################
     ### Task vine testing ###
     do_tv = 0
     if do_tv:
@@ -377,6 +381,9 @@ if __name__ == '__main__':
                 schemaclass=NanoAODSchema,
                 metadata={"dataset": name},
             ).events()
+
+        print("done export to json")
+        exit()
 
         t_beforeapplytofileset = time.time()
         # Get and compute the histograms
@@ -403,22 +410,22 @@ if __name__ == '__main__':
         #    extra_files={proxy: "proxy.pem"},
         #    #env_vars={"X509_USER_PROXY": "proxy.pem"},
         #)
+    #########################
 
 
+    # Print timing info
     t_end = time.time()
-    dt = time.time() - tstart
-
-    time_for_preprocess = t_beforeapplytofileset - t_beforepreprocess
-    time_for_applytofset = t_beforecompute - t_beforeapplytofileset
-    time_for_compute = t_end - t_beforecompute
-    time_total = time_for_preprocess + time_for_applytofset + time_for_compute
-    print("")
-    print("time_pre",t_beforepreprocess-tstart)
-    print("time_for_preprocess",time_for_preprocess)
-    print("time_for_applytofset",time_for_applytofset)
-    print("time_for_compute",time_for_compute)
-    print("time_total",time_total)
-    print("dt",dt)
+    dt = t_end - t_start
+    time_for_with_Client_as_client = t_before_preprocess - t_before_with_Client_as_client
+    time_for_preprocess = t_before_applytofileset - t_before_preprocess
+    time_for_applytofset = t_before_compute - t_before_applytofileset
+    time_for_compute = t_end - t_before_compute
+    print("\nTiming info:")
+    print(f"\tTime for with Client() as client: {round(time_for_with_Client_as_client,3)}s , ({round(time_for_with_Client_as_client/60,3)}m)")
+    print(f"\tTime for preprocess             : {round(time_for_preprocess,3)}s , ({round(time_for_preprocess/60,3)}m)")
+    print(f"\tTime for apply to fileset       : {round(time_for_applytofset,3)}s , ({round(time_for_applytofset/60,3)}m)")
+    print(f"\tTime for compute                : {round(time_for_compute,3)}s , ({round(time_for_compute/60,3)}m)")
+    #print(f"\tSanity check, these should equal: {round(dt,3)} , {round(time_for_with_Client_as_client+time_for_preprocess+time_for_applytofset+time_for_compute,3)}")
 
     # Save the output
     if not os.path.isdir(outpath): os.system("mkdir -p %s"%outpath)
