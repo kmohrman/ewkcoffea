@@ -26,6 +26,8 @@ from topcoffea.modules.get_param_from_jsons import GetParam
 get_tc_param = GetParam(topcoffea_path("params/params.json"))
 get_ec_param = GetParam(ewkcoffea_path("params/params.json"))
 
+import hist.dask as hda
+
 
 # Small helper function for creating the list of systematics
 # Append "Up" and "Down" to all base strings in a given syst list
@@ -138,15 +140,24 @@ class AnalysisProcessor(processor.ProcessorABC):
         self._skip_control_regions = skip_control_regions # Whether to skip the CR categories
 
 
-    @property
-    def columns(self):
-        return self._columns
-
     # Main function: run on a given dataset
     def process(self, events):
 
+        # Loop over samples and fill histos
+        #hout = {}
+        #for events in events_dict.values():
+
         # Dataset parameters
         dataset = events.metadata["dataset"]
+
+        # If we pass the root files instead of events object
+        #from coffea.nanoevents import NanoEventsFactory
+        #from coffea.nanoevents import NanoAODSchema
+        #events = NanoEventsFactory.from_root(
+        #    {fpath: "/Events" for fpath in fpaths},
+        #    schemaclass=NanoAODSchema,
+        #    metadata={"dataset": dataset},
+        #).events()
 
         isData             = self._samples[dataset]["isData"]
         histAxisName       = self._samples[dataset]["histAxisName"]
@@ -270,7 +281,7 @@ class AnalysisProcessor(processor.ProcessorABC):
         # We only calculate these values if not isData
         # Note: add() will generally modify up/down weights, so if these are needed for any reason after this point, we should instead pass copies to add()
         # Note: Here we will to the weights object the SFs that do not depend on any of the forthcoming loops
-        weights_obj_base = coffea.analysis_tools.Weights(len(events),storeIndividual=True)
+        weights_obj_base = coffea.analysis_tools.Weights(None,storeIndividual=True)
         if not isData:
             genw = events["genWeight"]
 
@@ -302,8 +313,8 @@ class AnalysisProcessor(processor.ProcessorABC):
             weights_obj_base.add('PU', cor_tc.GetPUSF((events.Pileup.nTrueInt), year), cor_tc.GetPUSF(events.Pileup.nTrueInt, year, 'up'), cor_tc.GetPUSF(events.Pileup.nTrueInt, year, 'down'))
 
             # Lepton SFs and systs
-            weights_obj_base.add("lepSF_muon", events.sf_4l_muon, copy.deepcopy(events.sf_4l_hi_muon), copy.deepcopy(events.sf_4l_lo_muon))
-            weights_obj_base.add("lepSF_elec", events.sf_4l_elec, copy.deepcopy(events.sf_4l_hi_elec), copy.deepcopy(events.sf_4l_lo_elec))
+            weights_obj_base.add("lepSF_muon", events.sf_4l_muon, copy.copy(events.sf_4l_hi_muon), copy.copy(events.sf_4l_lo_muon))
+            weights_obj_base.add("lepSF_elec", events.sf_4l_elec, copy.copy(events.sf_4l_hi_elec), copy.copy(events.sf_4l_lo_elec))
 
 
         # Set up the list of systematics that are handled via event weight variations
@@ -328,7 +339,7 @@ class AnalysisProcessor(processor.ProcessorABC):
         for obj_corr_syst_var in obj_corr_syst_var_list:
             # Make a copy of the base weights object, so that each time through the loop we do not double count systs
             # In this loop over systs that impact kinematics, we will add to the weights objects the SFs that depend on the object kinematics
-            weights_obj_base_for_kinematic_syst = copy.deepcopy(weights_obj_base)
+            weights_obj_base_for_kinematic_syst = copy.copy(weights_obj_base) # TODO do we need copy here?
 
 
             #################### Jets ####################
@@ -506,34 +517,36 @@ class AnalysisProcessor(processor.ProcessorABC):
 
             # lb pairs (i.e. always one lep, one bjet)
             bjets = goodJets[isBtagJetsLoose]
-            lb_pairs = ak.cartesian({"l":l_wwz_t,"j":bjets})
-            mlb_min = ak.min((lb_pairs["l"] + lb_pairs["j"]).mass,axis=-1)
-            mlb_max = ak.max((lb_pairs["l"] + lb_pairs["j"]).mass,axis=-1)
+            #lb_pairs = ak.cartesian({"l":l_wwz_t,"j":bjets})
+            #mlb_min = ak.min((lb_pairs["l"] + lb_pairs["j"]).mass,axis=-1)
+            #mlb_max = ak.max((lb_pairs["l"] + lb_pairs["j"]).mass,axis=-1)
 
             # Get BDT values
-            bdt_vars = [
-                ak.fill_none(mll_wl0_wl1,-9999),
-                ak.fill_none(dphi_4l_met,-9999),
-                ak.fill_none(dphi_zleps_met,-9999),
-                ak.fill_none(dphi_wleps_met,-9999),
-                ak.fill_none(dr_wl0_wl1,-9999),
-                ak.fill_none(dr_zl0_zl1,-9999),
-                ak.fill_none(dr_wleps_zleps,-9999),
-                ak.fill_none(met.pt,-9999),
-                ak.fill_none(mt2_val,-9999),
-                ak.fill_none(ptl4,-9999),
-                ak.fill_none(scalarptsum_lepmet,-9999),
-                ak.fill_none(scalarptsum_lepmetjet,-9999),
-                ak.fill_none(z_lep0.pt,-9999),
-                ak.fill_none(z_lep1.pt,-9999),
-                ak.fill_none(w_lep0.pt,-9999),
-                ak.fill_none(w_lep1.pt,-9999),
-            ]
+            bdt_feat_lst = [ "m_ll", "dPhi_4Lep_MET", "dPhi_Zcand_MET", "dPhi_WW_MET", "dR_Wcands", "dR_Zcands", "dR_WW_Z", "MET", "MT2", "Pt4l", "STLepHad", "STLep", "leading_Zcand_pt", "subleading_Zcand_pt", "leading_Wcand_pt", "subleading_Wcand_pt"]
+            bdt_var_dict = {
+                "m_ll"               : ak.fill_none(mll_wl0_wl1,-9999),
+                "dPhi_4Lep_MET"      : ak.fill_none(dphi_4l_met,-9999),
+                "dPhi_Zcand_MET"     : ak.fill_none(dphi_zleps_met,-9999),
+                "dPhi_WW_MET"        : ak.fill_none(dphi_wleps_met,-9999),
+                "dR_Wcands"          : ak.fill_none(dr_wl0_wl1,-9999),
+                "dR_Zcands"          : ak.fill_none(dr_zl0_zl1,-9999),
+                "dR_WW_Z"            : ak.fill_none(dr_wleps_zleps,-9999),
+                "MET"                : ak.fill_none(met.pt,-9999),
+                "MT2"                : ak.fill_none(mt2_val,-9999),
+                "Pt4l"               : ak.fill_none(ptl4,-9999),
+                "STLepHad"           : ak.fill_none(scalarptsum_lepmet,-9999),
+                "STLep"              : ak.fill_none(scalarptsum_lepmetjet,-9999),
+                "leading_Zcand_pt"   : ak.fill_none(z_lep0.pt,-9999),
+                "subleading_Zcand_pt": ak.fill_none(z_lep1.pt,-9999),
+                "leading_Wcand_pt"   : ak.fill_none(w_lep0.pt,-9999),
+                "subleading_Wcand_pt": ak.fill_none(w_lep1.pt,-9999),
+            }
 
-            bdt_of_wwz_raw = es_ec.eval_sig_bdt(events,bdt_vars,ewkcoffea_path("data/wwz_zh_bdt/of_WWZ.json"))
-            bdt_sf_wwz_raw = es_ec.eval_sig_bdt(events,bdt_vars,ewkcoffea_path("data/wwz_zh_bdt/sf_WWZ.json"))
-            bdt_of_zh_raw  = es_ec.eval_sig_bdt(events,bdt_vars,ewkcoffea_path("data/wwz_zh_bdt/of_ZH.json"))
-            bdt_sf_zh_raw  = es_ec.eval_sig_bdt(events,bdt_vars,ewkcoffea_path("data/wwz_zh_bdt/sf_ZH.json"))
+            bdt_of_wwz_raw = os_ec.xgb_eval_wrapper(bdt_feat_lst,bdt_var_dict,ewkcoffea_path("data/wwz_zh_bdt/of_WWZ.json"))
+            bdt_sf_wwz_raw = os_ec.xgb_eval_wrapper(bdt_feat_lst,bdt_var_dict,ewkcoffea_path("data/wwz_zh_bdt/sf_WWZ.json"))
+            bdt_of_zh_raw  = os_ec.xgb_eval_wrapper(bdt_feat_lst,bdt_var_dict,ewkcoffea_path("data/wwz_zh_bdt/of_ZH.json"))
+            bdt_sf_zh_raw  = os_ec.xgb_eval_wrapper(bdt_feat_lst,bdt_var_dict,ewkcoffea_path("data/wwz_zh_bdt/sf_ZH.json"))
+
             # Match TMVA's scaling https://root.cern.ch/doc/v606/MethodBDT_8cxx_source.html
             bdt_of_wwz = (2.0*((1.0+math.e**(-2*bdt_of_wwz_raw))**(-1))) - 1.0
             bdt_sf_wwz = (2.0*((1.0+math.e**(-2*bdt_sf_wwz_raw))**(-1))) - 1.0
@@ -651,8 +664,6 @@ class AnalysisProcessor(processor.ProcessorABC):
 
             ######### Fill histos #########
 
-            hout = {}
-
             dense_variables_dict = {
                 "mt2" : mt2_val,
                 "met" : met.pt,
@@ -709,8 +720,8 @@ class AnalysisProcessor(processor.ProcessorABC):
                 "mll_min_afos" : mll_min_afos,
                 "mll_min_sfos" : mll_min_sfos,
 
-                "mlb_min" : mlb_min,
-                "mlb_max" : mlb_max,
+                #"mlb_min" : mlb_min,
+                #"mlb_max" : mlb_max,
 
                 "bdt_of_wwz_raw": bdt_of_wwz_raw,
                 "bdt_sf_wwz_raw": bdt_sf_wwz_raw,
@@ -797,6 +808,9 @@ class AnalysisProcessor(processor.ProcessorABC):
 
 
             # Loop over the hists we want to fill
+            hout = {} # This is what we'll eventually return
+            masked_val_cache = {} # So we don't need to build the same mask multiple times
+            masked_weights_cache = {} # So we don't need to build the same mask multiple times
             for dense_axis_name, dense_axis_vals in dense_variables_dict.items():
                 if dense_axis_name not in self._hist_lst:
                     print(f"Skipping \"{dense_axis_name}\", it is not in the list of hists to include.")
@@ -805,7 +819,7 @@ class AnalysisProcessor(processor.ProcessorABC):
                 #print("dense_axis_name,vals",dense_axis_vals)
 
                 # Create the hist for this dense axis variable
-                hout[dense_axis_name] = hist.Hist(
+                hout[dense_axis_name] = hda.Hist(
                     hist.axis.StrCategory([], growth=True, name="process", label="process"),
                     hist.axis.StrCategory([], growth=True, name="category", label="category"),
                     hist.axis.StrCategory([], growth=True, name="systematic", label="systematic"),
@@ -825,22 +839,34 @@ class AnalysisProcessor(processor.ProcessorABC):
                         # Otherwise get the weight from the Weights object
                         weight = weights_obj_base_for_kinematic_syst.weight(wgt_fluct)
 
-
                     # Loop over categories
                     for sr_cat in cat_dict["lep_chan_lst"]:
 
                         # Skip filling if this variable is not relevant for this selection
                         if (dense_axis_name in exclude_var_dict) and (sr_cat in exclude_var_dict[dense_axis_name]): continue
 
-                        # If this is a counts hist, forget the weights and just fill with unit weights
-                        if dense_axis_name.endswith("_counts"): weight = events.nom
-                        #else: weights = weights_obj_base_for_kinematic_syst.partial_weight(include=["norm"]) # For testing
-                        #else: weights = weights_obj_base_for_kinematic_syst.weight(None) # For testing
-
                         # Make the cuts mask
                         cuts_lst = [sr_cat]
                         if isData: cuts_lst.append("is_good_lumi") # Apply golden json requirements if this is data
                         all_cuts_mask = selections.all(*cuts_lst)
+
+                        # Used cached masked dense axis variable vals if we've already computed it
+                        var_key = tuple(cuts_lst + [dense_axis_name])
+                        if var_key not in masked_val_cache:
+                            masked_val_cache[var_key] = dense_axis_vals[all_cuts_mask]
+                        masked_vals = masked_val_cache[var_key]
+
+                        # Used cached masked weights if we've already computed it
+                        if isData or dense_axis_name.endswith("_counts"):
+                            # Special case for the *_counts histograms, these get filled with unit weights (like data)
+                            # So need a different weights_key for this special case
+                            weight = events.nom
+                            weights_key = tuple(cuts_lst + [wgt_fluct, "weights_counts"])
+                        else:
+                            weights_key = tuple(cuts_lst + [wgt_fluct, "weights_norm"])
+                        if weights_key not in masked_weights_cache:
+                            masked_weights_cache[weights_key] = weight[all_cuts_mask]
+                        masked_weight = masked_weights_cache[weights_key]
 
                         #run = events.run[all_cuts_mask]
                         #luminosityBlock = events.luminosityBlock[all_cuts_mask]
@@ -859,8 +885,8 @@ class AnalysisProcessor(processor.ProcessorABC):
 
                         # Fill the histos
                         axes_fill_info_dict = {
-                            dense_axis_name : dense_axis_vals[all_cuts_mask],
-                            "weight"        : weight[all_cuts_mask],
+                            dense_axis_name : masked_vals,
+                            "weight"        : masked_weight,
                             "process"       : histAxisName,
                             "category"      : sr_cat,
                             "systematic"    : wgt_fluct,

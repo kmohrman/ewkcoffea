@@ -6,10 +6,17 @@ import time
 import cloudpickle
 import gzip
 import os
-from coffea import processor
-from coffea.nanoevents import NanoAODSchema
+import dask
+from distributed import Client
 
-import topcoffea.modules.remote_environment as remote_environment
+from coffea.nanoevents import NanoAODSchema
+from coffea.nanoevents import NanoEventsFactory
+
+from coffea.dataset_tools import preprocess
+from coffea.dataset_tools import apply_to_fileset
+from coffea.dataset_tools import filter_files
+
+from ndcctools.taskvine import DaskVine
 
 import wwz4l
 
@@ -152,11 +159,11 @@ if __name__ == '__main__':
                         else:
                             LoadJsonToSampleName(l, prefix)
 
-    flist = {}
+    fdict = {}
     nevts_total = 0
     for sname in samplesdict.keys():
         redirector = samplesdict[sname]['redirector']
-        flist[sname] = [(redirector+f) for f in samplesdict[sname]['files']]
+        fdict[sname] = [(redirector+f) for f in samplesdict[sname]['files']]
         samplesdict[sname]['year'] = samplesdict[sname]['year']
         samplesdict[sname]['xsec'] = float(samplesdict[sname]['xsec'])
         samplesdict[sname]['nEvents'] = int(samplesdict[sname]['nEvents'])
@@ -190,133 +197,146 @@ if __name__ == '__main__':
         print('pretending...')
         exit()
 
-    # Extract the list of all WCs, as long as we haven't already specified one.
-    if len(wc_lst) == 0:
-        for k in samplesdict.keys():
-            for wc in samplesdict[k]['WCnames']:
-                if wc not in wc_lst:
-                    wc_lst.append(wc)
-
-    if len(wc_lst) > 0:
-        # Yes, why not have the output be in correct English?
-        if len(wc_lst) == 1:
-            wc_print = wc_lst[0]
-        elif len(wc_lst) == 2:
-            wc_print = wc_lst[0] + ' and ' + wc_lst[1]
-        else:
-            wc_print = ', '.join(wc_lst[:-1]) + ', and ' + wc_lst[-1]
-            print('Wilson Coefficients: {}.'.format(wc_print))
-    else:
-        print('No Wilson coefficients specified')
 
     processor_instance = wwz4l.AnalysisProcessor(samplesdict,wc_lst,hist_lst,ecut_threshold,do_errors,do_systs,split_lep_flavor,skip_sr,skip_cr)
 
-    if executor == "work_queue":
-        executor_args = {
-            'master_name': '{}-workqueue-coffea'.format(os.environ['USER']),
-
-            # find a port to run work queue in this range:
-            'port': port,
-
-            'debug_log': 'debug.log',
-            'transactions_log': 'tr.log',
-            'stats_log': 'stats.log',
-            'tasks_accum_log': 'tasks.log',
-
-            'environment_file': remote_environment.get_environment(
-                extra_pip=["mt2","xgboost"],
-                extra_pip_local = {"ewkcoffea": ["ewkcoffea", "setup.py"]},
-            ),
-            'extra_input_files': ["wwz4l.py"],
-
-            'retries': 5,
-
-            # use mid-range compression for chunks results. 9 is the default for work
-            # queue in coffea. Valid values are 0 (minimum compression, less memory
-            # usage) to 16 (maximum compression, more memory usage).
-            'compression': 9,
-
-            # automatically find an adequate resource allocation for tasks.
-            # tasks are first tried using the maximum resources seen of previously ran
-            # tasks. on resource exhaustion, they are retried with the maximum resource
-            # values, if specified below. if a maximum is not specified, the task waits
-            # forever until a larger worker connects.
-            'resource_monitor': True,
-            'resources_mode': 'auto',
-
-            # this resource values may be omitted when using
-            # resources_mode: 'auto', but they do make the initial portion
-            # of a workflow run a little bit faster.
-            # Rather than using whole workers in the exploratory mode of
-            # resources_mode: auto, tasks are forever limited to a maximum
-            # of 8GB of mem and disk.
-            #
-            # NOTE: The very first tasks in the exploratory
-            # mode will use the values specified here, so workers need to be at least
-            # this large. If left unspecified, tasks will use whole workers in the
-            # exploratory mode.
-            # 'cores': 1,
-            # 'disk': 8000,   #MB
-            # 'memory': 10000, #MB
-
-            # control the size of accumulation tasks. Results are
-            # accumulated in groups of size chunks_per_accum, keeping at
-            # most chunks_per_accum at the same time in memory per task.
-            'chunks_per_accum': 25,
-            'chunks_accum_in_mem': 2,
-
-            # terminate workers on which tasks have been running longer than average.
-            # This is useful for temporary conditions on worker nodes where a task will
-            # be finish faster is ran in another worker.
-            # the time limit is computed by multipliying the average runtime of tasks
-            # by the value of 'fast_terminate_workers'.  Since some tasks can be
-            # legitimately slow, no task can trigger the termination of workers twice.
-            #
-            # warning: small values (e.g. close to 1) may cause the workflow to misbehave,
-            # as most tasks will be terminated.
-            #
-            # Less than 1 disables it.
-            'fast_terminate_workers': 0,
-
-            # print messages when tasks are submitted, finished, etc.,
-            # together with their resource allocation and usage. If a task
-            # fails, its standard output is also printed, so we can turn
-            # off print_stdout for all tasks.
-            'verbose': True,
-            'print_stdout': False,
-        }
 
     # Run the processor and get the output
-    tstart = time.time()
+    t_start = time.time()
 
-    if executor == "futures":
-        exec_instance = processor.FuturesExecutor(workers=nworkers)
-        runner = processor.Runner(exec_instance, schema=NanoAODSchema, chunksize=chunksize, maxchunks=nchunks)
-    elif executor == "iterative":
-        exec_instance = processor.IterativeExecutor()
-        runner = processor.Runner(exec_instance, schema=NanoAODSchema, chunksize=chunksize, maxchunks=nchunks)
-    elif executor ==  "work_queue":
-        executor = processor.WorkQueueExecutor(**executor_args)
-        runner = processor.Runner(executor, schema=NanoAODSchema, chunksize=chunksize, maxchunks=nchunks, skipbadfiles=False, xrootdtimeout=180)
+    ####################################3
+    ### coffea2023 ###
 
-    output = runner(flist, treename, processor_instance)
+    # Get fileset
+    fileset = {}
+    for name, fpaths in fdict.items():
+        fileset[name] = {}
+        fileset[name]["files"] = {}
+        for fpath in fpaths:
+            fileset[name]["files"][fpath] = {"object_path": "Events"}
+            fileset[name]["metadata"] = {"dataset": name}
+    print(fileset)
+    print("Number of datasets:",len(fdict))
 
-    dt = time.time() - tstart
 
-    if executor == "work_queue":
-        print('Processed {} events in {} seconds ({:.2f} evts/sec).'.format(nevts_total,dt,nevts_total/dt))
+    #### Try with distributed Client ####
 
-    #nbins = sum(sum(arr.size for arr in h._sumw.values()) for h in output.values() if isinstance(h, hist.Hist))
-    #nfilled = sum(sum(np.sum(arr > 0) for arr in h._sumw.values()) for h in output.values() if isinstance(h, hist.Hist))
-    #print("Filled %.0f bins, nonzero bins: %1.1f %%" % (nbins, 100*nfilled/nbins,))
+    t_before_with_Client_as_client = time.time()
+    #with dask.config.set({"scheduler": "sync"}): # Single thread
+    #with Client(n_workers=8, threads_per_worker=1) as client:
+    with Client() as client:
 
-    if executor == "futures":
-        print("Processing time: %1.2f s with %i workers (%.2f s cpu overall)" % (dt, nworkers, dt*nworkers, ))
+        # Run preprocess
+        print("\nRunning preprocess...")
+        t_before_preprocess = time.time()
+        dataset_runnable, dataset_updated = preprocess(
+            fileset,
+            step_size=50_000,
+            align_clusters=False,
+            files_per_batch=1,
+            save_form=False,
+        )
+        dataset_runnable = filter_files(dataset_runnable)
+
+
+        # Dump to a json
+        #with gzip.open("dataset_runnable_test.json.gz", "wt") as fout:
+        #    json.dump(dataset_runnable, fout)
+        #exit()
+        # Or load a json
+        #with gzip.open("dataset_runnable_test.json.gz", "r") as f:
+        #    dataset_runnable = json.load(f)
+
+
+        t_before_applytofileset = time.time()
+        # Run apply_to_fileset
+        print("\nRunning apply_to_fileset...")
+        histos_to_compute, reports = apply_to_fileset(
+            processor_instance,
+            dataset_runnable,
+            uproot_options={"allow_read_errors_with_report": True},
+            #parallelize_with_dask=True,
+        )
+
+        # Check columns to be read
+        #import dask_awkward as dak
+        #print("\nRunning necessary_columns...")
+        #columns_read = dak.necessary_columns(histos_to_compute[list(histos_to_compute.keys())[0]])
+        #print(columns_read)
+
+        # Compute
+        t_before_compute = time.time()
+        print("\nRunning compute...")
+        coutputs, creports = dask.compute(histos_to_compute, reports)
+
+
+
+    #########################
+    ### Task vine testing ###
+    do_tv = 0
+    if do_tv:
+
+        #fdict = {"UL17_WWZJetsTo4L2Nu_forCI": ["/home/k.mohrman/coffea_dir/migrate_to_coffea2023_repo/ewkcoffea/analysis/wwz/output_1.root"]}
+
+        # Create dict of events objects
+        print("Number of datasets:",len(fdict))
+        events_dict = {}
+        for name, fpaths in fdict.items():
+            events_dict[name] = NanoEventsFactory.from_root(
+                {fpath: "/Events" for fpath in fpaths},
+                schemaclass=NanoAODSchema,
+                metadata={"dataset": name},
+            ).events()
+
+        print("done export to json")
+        exit()
+
+        t_beforeapplytofileset = time.time()
+        # Get and compute the histograms
+        histos_to_compute = {}
+        for json_name in fdict.keys():
+            print(f"Getting histos for {json_name}")
+            histos_to_compute[json_name] = processor_instance.process(events_dict[json_name])
+
+        m = DaskVine([9123,9128], name=f"coffea-vine-{os.environ['USER']}")
+
+        t_beforecompute = time.time()
+        #coutputs = dask.compute(histos_to_compute)[0] # Output of dask.compute is a tuple
+        #coutputs = dask.compute(histos_to_compute, scheduler=m.get, resources={"cores": 1}, resources_mode=None, lazy_transfers=True)
+        #with Client() as _:
+            #coutputs = dask.compute(histos_to_compute)
+
+        #proxy = m.declare_file(f"/tmp/x509up_u{os.getuid()}", cache=True)
+        #coutputs = dask.compute(
+        #    histos_to_compute,
+        #    scheduler=m.get,
+        #    resources={"cores": 1},
+        #    resources_mode=None,
+        #    lazy_transfers=True,
+        #    extra_files={proxy: "proxy.pem"},
+        #    #env_vars={"X509_USER_PROXY": "proxy.pem"},
+        #)
+    #########################
+
+
+    # Print timing info
+    t_end = time.time()
+    dt = t_end - t_start
+    time_for_with_Client_as_client = t_before_preprocess - t_before_with_Client_as_client
+    time_for_preprocess = t_before_applytofileset - t_before_preprocess
+    time_for_applytofset = t_before_compute - t_before_applytofileset
+    time_for_compute = t_end - t_before_compute
+    print("\nTiming info:")
+    print(f"\tTime for with Client() as client: {round(time_for_with_Client_as_client,3)}s , ({round(time_for_with_Client_as_client/60,3)}m)")
+    print(f"\tTime for preprocess             : {round(time_for_preprocess,3)}s , ({round(time_for_preprocess/60,3)}m)")
+    print(f"\tTime for apply to fileset       : {round(time_for_applytofset,3)}s , ({round(time_for_applytofset/60,3)}m)")
+    print(f"\tTime for compute                : {round(time_for_compute,3)}s , ({round(time_for_compute/60,3)}m)")
+    #print(f"\tSanity check, these should equal: {round(dt,3)} , {round(time_for_with_Client_as_client+time_for_preprocess+time_for_applytofset+time_for_compute,3)}")
 
     # Save the output
     if not os.path.isdir(outpath): os.system("mkdir -p %s"%outpath)
     out_pkl_file = os.path.join(outpath,outname+".pkl.gz")
     print(f"\nSaving output in {out_pkl_file}...")
     with gzip.open(out_pkl_file, "wb") as fout:
-        cloudpickle.dump(output, fout)
+        cloudpickle.dump(coutputs, fout)
     print("Done!")
