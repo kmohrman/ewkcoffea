@@ -16,8 +16,6 @@ from coffea.dataset_tools import preprocess
 from coffea.dataset_tools import apply_to_fileset
 from coffea.dataset_tools import filter_files
 
-import topcoffea.modules.remote_environment as remote_environment
-
 from ndcctools.taskvine import DaskVine
 
 import wwz4l
