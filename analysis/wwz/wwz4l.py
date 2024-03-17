@@ -805,7 +805,8 @@ class AnalysisProcessor(processor.ProcessorABC):
 
             # Loop over the hists we want to fill
             hout = {} # This is what we'll eventually return
-            masks_cache = {} # So we don't need to build the same mask multiple times
+            masked_val_cache = {} # So we don't need to build the same mask multiple times
+            masked_weights_cache = {} # So we don't need to build the same mask multiple times
             for dense_axis_name, dense_axis_vals in dense_variables_dict.items():
                 if dense_axis_name not in self._hist_lst:
                     print(f"Skipping \"{dense_axis_name}\", it is not in the list of hists to include.")
@@ -840,22 +841,28 @@ class AnalysisProcessor(processor.ProcessorABC):
                         # Skip filling if this variable is not relevant for this selection
                         if (dense_axis_name in exclude_var_dict) and (sr_cat in exclude_var_dict[dense_axis_name]): continue
 
-                        # If this is a counts hist, forget the weights and just fill with unit weights
-                        if isData or dense_axis_name.endswith("_counts"): weight = events.nom
-                        #else: weights = weights_obj_base_for_kinematic_syst.partial_weight(include=["norm"]) # For testing
-                        #else: weights = weights_obj_base_for_kinematic_syst.weight(None) # For testing
-
                         # Make the cuts mask
                         cuts_lst = [sr_cat]
                         if isData: cuts_lst.append("is_good_lumi") # Apply golden json requirements if this is data
                         all_cuts_mask = selections.all(*cuts_lst)
 
-                        # Do not recalculate the mask if we've already computed it
-                        if tuple(cuts_lst) in masks_cache:
-                            all_cuts_mask = masks_cache[tuple(cuts_lst)]
+                        # Used cached masked dense axis variable vals if we've already computed it
+                        var_key = tuple(cuts_lst + [dense_axis_name])
+                        if var_key not in masked_val_cache:
+                            masked_val_cache[var_key] = dense_axis_vals[all_cuts_mask]
+                        masked_vals = masked_val_cache[var_key]
+
+                        # Used cached masked weights if we've already computed it
+                        if isData or dense_axis_name.endswith("_counts"):
+                            # Special case for the *_counts histograms, these get filled with unit weights (like data)
+                            # So need a different weights_key for this special case
+                            weight = events.nom
+                            weights_key = tuple(cuts_lst + [wgt_fluct, "weights_counts"])
                         else:
-                            masks_cache[tuple(cuts_lst)] = selections.all(*cuts_lst)
-                            all_cuts_mask = masks_cache[tuple(cuts_lst)]
+                            weights_key = tuple(cuts_lst + [wgt_fluct, "weights_norm"])
+                        if weights_key not in masked_weights_cache:
+                            masked_weights_cache[weights_key] = weight[all_cuts_mask]
+                        masked_weight = masked_weights_cache[weights_key]
 
                         #run = events.run[all_cuts_mask]
                         #luminosityBlock = events.luminosityBlock[all_cuts_mask]
@@ -874,8 +881,8 @@ class AnalysisProcessor(processor.ProcessorABC):
 
                         # Fill the histos
                         axes_fill_info_dict = {
-                            dense_axis_name : dense_axis_vals[all_cuts_mask],
-                            "weight"        : weight[all_cuts_mask],
+                            dense_axis_name : masked_vals,
+                            "weight"        : masked_weight,
                             "process"       : histAxisName,
                             "category"      : sr_cat,
                             "systematic"    : wgt_fluct,
