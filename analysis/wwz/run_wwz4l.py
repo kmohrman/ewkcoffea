@@ -9,9 +9,6 @@ import os
 import dask
 from distributed import Client
 
-from coffea.nanoevents import NanoAODSchema
-from coffea.nanoevents import NanoEventsFactory
-
 from coffea.dataset_tools import preprocess
 from coffea.dataset_tools import apply_to_fileset
 from coffea.dataset_tools import filter_files
