@@ -20,13 +20,13 @@ from ndcctools.taskvine import DaskVine
 
 import wwz4l
 
-LST_OF_KNOWN_EXECUTORS = ["futures","work_queue","iterative"]
+LST_OF_KNOWN_EXECUTORS = ["local","task_vine"]
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='You can customize your run')
     parser.add_argument('jsonFiles'        , nargs='?', default='', help = 'Json file(s) containing files and metadata')
-    parser.add_argument('--executor','-x'  , default='work_queue', help = 'Which executor to use', choices=LST_OF_KNOWN_EXECUTORS)
+    parser.add_argument('--executor','-x'  , default='dask', help = 'Which executor to use', choices=LST_OF_KNOWN_EXECUTORS)
     parser.add_argument('--prefix', '-r'   , nargs='?', default='', help = 'Prefix or redirector to look for the files')
     parser.add_argument('--test','-t'       , action='store_true'  , help = 'To perform a test, run over a few events in a couple of chunks')
     parser.add_argument('--pretend'        , action='store_true', help = 'Read json files but, not execute the analysis')
@@ -204,8 +204,11 @@ if __name__ == '__main__':
     # Run the processor and get the output
     t_start = time.time()
 
+
     ####################################3
     ### coffea2023 ###
+
+    #fdict = {"UL17_WWZJetsTo4L2Nu_forCI": ["/home/k.mohrman/coffea_dir/migrate_to_coffea2023_repo/ewkcoffea/analysis/wwz/output_1.root"]}
 
     # Get fileset
     fileset = {}
@@ -218,11 +221,9 @@ if __name__ == '__main__':
     print(fileset)
     print("Number of datasets:",len(fdict))
 
-
-    #### Try with distributed Client ####
+    #### Run preprocess, build task graphs, compute ####
 
     t_before_with_Client_as_client = time.time()
-    #with dask.config.set({"scheduler": "sync"}): # Single thread
     #with Client(n_workers=8, threads_per_worker=1) as client:
     with Client() as client:
 
@@ -244,7 +245,7 @@ if __name__ == '__main__':
         #    json.dump(dataset_runnable, fout)
         #exit()
         # Or load a json
-        #with gzip.open("dataset_runnable_test.json.gz", "r") as f:
+        #with gzip.open("dataset_runnable_test_mar16_full.json.gz", "r") as f:
         #    dataset_runnable = json.load(f)
 
 
@@ -258,6 +259,10 @@ if __name__ == '__main__':
             #parallelize_with_dask=True,
         )
 
+        # Does not work
+        #with gzip.open("histos_to_compute_full_mar25.json.gz", "wb") as fout:
+        #    cloudpickle.dump(histos_to_compute, fout)
+
         # Check columns to be read
         #import dask_awkward as dak
         #print("\nRunning necessary_columns...")
@@ -267,56 +272,27 @@ if __name__ == '__main__':
         # Compute
         t_before_compute = time.time()
         print("\nRunning compute...")
-        coutputs, creports = dask.compute(histos_to_compute, reports)
+
+        if executor == "task_vine":
+            print("Running with Task vine")
+            m = DaskVine([9123,9128], name=f"coffea-vine-{os.environ['USER']}")
+            proxy = m.declare_file(f"/tmp/x509up_u{os.getuid()}", cache=True)
+            coutputs, reports = dask.compute(
+                histos_to_compute,
+                reports,
+                scheduler=m.get,
+                resources={"cores": 1},
+                resources_mode=None,
+                lazy_transfers=True,
+                extra_files={proxy: "proxy.pem"},
+                env_vars={"X509_USER_PROXY": "proxy.pem"},
+            )
+
+        else:
+            coutputs, creports = dask.compute(histos_to_compute, reports)
 
 
 
-    #########################
-    ### Task vine testing ###
-    do_tv = 0
-    if do_tv:
-
-        #fdict = {"UL17_WWZJetsTo4L2Nu_forCI": ["/home/k.mohrman/coffea_dir/migrate_to_coffea2023_repo/ewkcoffea/analysis/wwz/output_1.root"]}
-
-        # Create dict of events objects
-        print("Number of datasets:",len(fdict))
-        events_dict = {}
-        for name, fpaths in fdict.items():
-            events_dict[name] = NanoEventsFactory.from_root(
-                {fpath: "/Events" for fpath in fpaths},
-                schemaclass=NanoAODSchema,
-                metadata={"dataset": name},
-            ).events()
-
-        print("done export to json")
-        exit()
-
-        t_beforeapplytofileset = time.time()
-        # Get and compute the histograms
-        histos_to_compute = {}
-        for json_name in fdict.keys():
-            print(f"Getting histos for {json_name}")
-            histos_to_compute[json_name] = processor_instance.process(events_dict[json_name])
-
-        m = DaskVine([9123,9128], name=f"coffea-vine-{os.environ['USER']}")
-
-        t_beforecompute = time.time()
-        #coutputs = dask.compute(histos_to_compute)[0] # Output of dask.compute is a tuple
-        #coutputs = dask.compute(histos_to_compute, scheduler=m.get, resources={"cores": 1}, resources_mode=None, lazy_transfers=True)
-        #with Client() as _:
-            #coutputs = dask.compute(histos_to_compute)
-
-        #proxy = m.declare_file(f"/tmp/x509up_u{os.getuid()}", cache=True)
-        #coutputs = dask.compute(
-        #    histos_to_compute,
-        #    scheduler=m.get,
-        #    resources={"cores": 1},
-        #    resources_mode=None,
-        #    lazy_transfers=True,
-        #    extra_files={proxy: "proxy.pem"},
-        #    #env_vars={"X509_USER_PROXY": "proxy.pem"},
-        #)
-    #########################
 
 
     # Print timing info
