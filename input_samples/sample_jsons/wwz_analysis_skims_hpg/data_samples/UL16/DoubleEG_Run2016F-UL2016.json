@@ -6,7 +6,11 @@
     "options": "",
     "WCnames": [],
     "files": [
-        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_5.root"
+        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_5.root",
+        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_1.root",
+        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_4.root",
+        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_3.root",
+        "/blue/avery/p.chang/3LepTau_4Lep/DoubleEG_Run2016F-UL2016_MiniAODv2_NanoAODv9-v1_NANOAOD_3LepTau_4Lep/output_2.root"
     ],
     "nEvents": 5401,
     "nGenEvents": 5401,
