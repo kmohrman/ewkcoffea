@@ -5,7 +5,7 @@ This analysis repository contains scripts and tools for performing analyses asso
 
 First, clone the repository and `cd` into the toplevel directory. 
 ```
-git clone https://github.com/kmohrman/ewkcoffea.git
+git clone -b coffea2023 https://github.com/kmohrman/ewkcoffea.git
 cd ewkcoffea
 ```
 Next, create a `conda` environment and activate it. 
@@ -25,7 +25,7 @@ pip install mt2
 The `topcoffea` package upon which this analysis also depends is not yet available on `PyPI`, so we need to clone the `topcoffea` repo and install it ourselves.
 ```
 cd /your/favorite/directory
-git clone https://github.com/TopEFT/topcoffea.git
+git clone -b coffea2023 https://github.com/TopEFT/topcoffea.git
 cd topcoffea
 pip install -e .  
 ```
