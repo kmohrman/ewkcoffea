@@ -229,7 +229,7 @@ if __name__ == '__main__':
         t_before_preprocess = time.time()
         dataset_runnable, dataset_updated = preprocess(
             fileset,
-            step_size=50_000,
+            step_size=100_000,
             align_clusters=False,
             files_per_batch=1,
             save_form=False,
@@ -272,7 +272,11 @@ if __name__ == '__main__':
 
         if executor == "task_vine":
             print("Running with Task vine")
-            m = DaskVine([9123,9128], name=f"coffea-vine-{os.environ['USER']}")
+            m = DaskVine(
+                [9123,9128],
+                name=f"coffea-vine-{os.environ['USER']}",
+                #run_info_path="/blue/p.chang/k.mohrman/vine-run-info",
+            )
             proxy = m.declare_file(f"/tmp/x509up_u{os.getuid()}", cache=True)
             coutputs, reports = dask.compute(
                 histos_to_compute,
@@ -281,6 +285,9 @@ if __name__ == '__main__':
                 resources={"cores": 1},
                 resources_mode=None,
                 lazy_transfers=True,
+                #submit_per_cycle=200,
+                #max_pending=1500,
+                #task_mode='function-calls',
                 extra_files={proxy: "proxy.pem"},
                 env_vars={"X509_USER_PROXY": "proxy.pem"},
             )
