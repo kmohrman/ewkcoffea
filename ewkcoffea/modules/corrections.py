@@ -566,3 +566,51 @@ def ApplyJetVetoMaps(jets,year):
     #Sum the outputs for each event (if the sum is >0, the event will fail)
     veto_map_event = ak.sum(jet_vetomap_score, axis=-1)
     return veto_map_event
+
+def CorrectedMETFactory(jets,year,met,syst,isdata):
+
+    if isdata:
+        key = "data"
+    else:
+        key = "mc"
+
+    if year in ['2022','2022EE','2023','2023BPix']:
+        fname = ewkcoffea_path("data/wwz_jerc/run3_met.json")
+    elif year == "2016APV":
+        fname = ewkcoffea_path("data/wwz_jerc/2016APV_jerc/met.json")
+    elif year == "2016":
+        fname = ewkcoffea_path("data/wwz_jerc/2016_jerc/met.json")
+    elif year == "2017":
+        fname = ewkcoffea_path("data/wwz_jerc/2017_jerc/met.json")
+    elif year == "2018":
+        fname = ewkcoffea_path("data/wwz_jerc/2018_jerc/met.json")
+    else:
+        raise Exception("Unrecognized year. Exciting!")
+
+    #Carry the JEC/JER corrections forward
+    sj, cj = np.sin(jets.phi), np.cos(jets.phi)
+    x = met_pt * np.cos(met_phi) + awkward.sum((jets.pt - jets.pt_orig) * cj, axis=1)
+    y = met_pt * np.sin(met_phi) + awkward.sum((jets.pt - jets.pt_orig) * sj, axis=1)
+    pt = np.hypot(x, y)
+    phi = np.arctan2(y,x)
+
+    #Apply the XY corrections
+    pt_v2 = ceval[f"pt_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
+    phi_v2 = ceval[f"phi_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
+
+    #Return the corrected MET unless we are looking at MET systematic
+    if not syst.startswith("MET"):
+        return pt_v2,phi_v2
+    else:
+        if "phi" in syst:
+            if syst.endswith("Up"):
+                phi_v3 = phi_v2 + jets.phi_factor_up
+            elif syst.endswith("Down"):
+                phi_v3 = phi_v2 + jets.phi_factor_down
+            return pt_v2,phi_v3
+        elif "pt" in syst:
+            if syst.endswith("Up"):
+                pt_v3 = pt_v2 + jets.pt_factor_up
+            elif syst.endswith("Down"):
+                pt_v3 = pt_v2 + jets.pt_factor_down
+            return pt_v3,phi_v2
