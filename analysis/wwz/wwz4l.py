@@ -291,6 +291,7 @@ class AnalysisProcessor(processor.ProcessorABC):
         mu   = events.Muon
         tau  = events.Tau
         jets = events.Jet
+        npvs = events.PV.npvs
         if (is2022 or is2023):
             rho = events.Rho.fixedGridRhoFastjetAll
         else:
@@ -482,8 +483,8 @@ class AnalysisProcessor(processor.ProcessorABC):
             veto_map_mask = (veto_map_array == 0)
 
             ##### JME Stuff #####
-
             cleanedJets["pt_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.pt
+            cleanedJets["pt_orig"] = cleanedJets.pt
             cleanedJets["mass_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.mass
 
             if not isData:
@@ -491,14 +492,15 @@ class AnalysisProcessor(processor.ProcessorABC):
             else:
                 cleanedJets["pt_gen"] =ak.ones_like(cleanedJets.pt)
 
-            # Need to broadcast Rho to have same structure as cleanedJets
+            # Need to broadcast some variables to have same structure
             cleanedJets["rho"] = ak.broadcast_arrays(rho, cleanedJets.pt)[0]
+            met["npvs"] = ak.broadcast_arrays(npvs, met.pt)[0]
+            met["run"] = ak.broadcast_arrays(events.run, met.pt)[0]
 
             events_cache = events.caches[0] # used for storing intermediary values for corrections
             cleanedJets = cor_ec.ApplyJetCorrections(year,isData, era).build(cleanedJets,lazy_cache=events_cache,isdata=isData)
             cleanedJets = cor_ec.ApplyJetSystematics(year,cleanedJets,obj_corr_syst_var)
-            #met=ApplyJetCorrections(year,isData, era, corr_type='met').build(met, cleanedJets, lazy_cache=events_cache)
-
+            met.pt,met.phi = CorrectedMETFactory(cleanedJets,year,met,obj_corr_syst_var,isData)
             ##### End of JERC #####
 
             # Selecting jets and cleaning them

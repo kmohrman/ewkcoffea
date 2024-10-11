@@ -594,6 +594,10 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
     pt = np.hypot(x, y)
     phi = np.arctan2(y,x)
 
+    #Grab some variables
+    npvs = met.npvs
+    run = met.run
+
     #Apply the XY corrections
     pt_v2 = ceval[f"pt_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
     phi_v2 = ceval[f"phi_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
@@ -602,15 +606,19 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
     if not syst.startswith("MET"):
         return pt_v2,phi_v2
     else:
+        phi_factor_up = 
+        phi_factor_down =
+        pt_factor_up = 
+        pt_factor_down = 
         if "phi" in syst:
             if syst.endswith("Up"):
-                phi_v3 = phi_v2 + jets.phi_factor_up
+                phi_v3 = phi_v2 + met.phi_factor_up
             elif syst.endswith("Down"):
-                phi_v3 = phi_v2 + jets.phi_factor_down
+                phi_v3 = phi_v2 + met.phi_factor_down
             return pt_v2,phi_v3
         elif "pt" in syst:
             if syst.endswith("Up"):
-                pt_v3 = pt_v2 + jets.pt_factor_up
+                pt_v3 = pt_v2 + met.pt_factor_up
             elif syst.endswith("Down"):
-                pt_v3 = pt_v2 + jets.pt_factor_down
+                pt_v3 = pt_v2 + met.pt_factor_down
             return pt_v3,phi_v2
