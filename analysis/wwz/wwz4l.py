@@ -451,11 +451,13 @@ class AnalysisProcessor(processor.ProcessorABC):
                 f"AbsoluteStat_uncorrelated_{year}",f"RelativeJEREC1_uncorrelated_{year}",f"RelativeJEREC2_uncorrelated_{year}",f"RelativePtEC1_uncorrelated_{year}",f"RelativePtEC2_uncorrelated_{year}",
                 f"TimePtEta_uncorrelated_{year}",f"RelativeSample_uncorrelated_{year}",f"RelativeStatEC_uncorrelated_{year}",f"RelativeStatFSR_uncorrelated_{year}",f"RelativeStatHF_uncorrelated_{year}",
                 f"JER_{year}",
+                f"MET_pfunclsutered_{year}",
             ]
         else:
             obj_correction_systs = [
                 f"JEC_{year}",
                 f"JER_{year}",
+                f"MET_pfunclsutered_{year}",
             ]
         obj_correction_systs = append_up_down_to_sys_base(obj_correction_systs)
 
@@ -500,12 +502,14 @@ class AnalysisProcessor(processor.ProcessorABC):
             events_cache = events.caches[0] # used for storing intermediary values for corrections
             cleanedJets = cor_ec.ApplyJetCorrections(year,isData, era).build(cleanedJets,lazy_cache=events_cache,isdata=isData)
             cleanedJets = cor_ec.ApplyJetSystematics(year,cleanedJets,obj_corr_syst_var)
-            met.pt,met.phi = CorrectedMETFactory(cleanedJets,year,met,obj_corr_syst_var,isData)
             ##### End of JERC #####
 
             # Selecting jets and cleaning them
             cleanedJets["is_good"] = os_tc.is_tight_jet(getattr(cleanedJets, jetptname), cleanedJets.eta, cleanedJets.jetId, pt_cut=20., eta_cut=get_ec_param("wwz_eta_j_cut"), id_cut=get_ec_param("wwz_jet_id_cut"))
             goodJets = cleanedJets[cleanedJets.is_good]
+
+            # Now correct the met (need to remove bad jets before this!)
+            met = cor_ec.CorrectedMETFactory(goodJets,year,met,obj_corr_syst_var,isData)
 
             # Count jets
             njets = ak.num(goodJets)

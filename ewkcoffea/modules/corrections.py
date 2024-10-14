@@ -509,7 +509,7 @@ def ApplyJetSystematics(year,cleanedJets,syst_var):
         return cleanedJets.JER.up
     elif (syst_var == f'JER_{year}Down'):
         return cleanedJets.JER.down
-    elif (syst_var == 'nominal'):
+    elif ((syst_var == 'nominal') or syst_var.startswith("MET")):
         return cleanedJets
     elif (syst_var == f'JEC_{year}Up'):
         return cleanedJets.JES_Total.up
@@ -587,16 +587,22 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
     else:
         raise Exception("Unrecognized year. Exciting!")
 
-    #Carry the JEC/JER corrections forward
+    #Carry the JEC/JER corrections forward with some math
     sj, cj = np.sin(jets.phi), np.cos(jets.phi)
-    x = met_pt * np.cos(met_phi) + awkward.sum((jets.pt - jets.pt_orig) * cj, axis=1)
-    y = met_pt * np.sin(met_phi) + awkward.sum((jets.pt - jets.pt_orig) * sj, axis=1)
+    x = met.pt * np.cos(met.phi) + ak.sum((jets.pt - jets.pt_orig) * cj, axis=1)
+    y = met.pt * np.sin(met.phi) + ak.sum((jets.pt - jets.pt_orig) * sj, axis=1)
     pt = np.hypot(x, y)
     phi = np.arctan2(y,x)
+
+    #Bound the pt
+#    pt = ak.where(pt>6499.99,6499.99,pt)
 
     #Grab some variables
     npvs = met.npvs
     run = met.run
+
+    # Grab the json
+    ceval = correctionlib.CorrectionSet.from_file(fname)
 
     #Apply the XY corrections
     pt_v2 = ceval[f"pt_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
@@ -604,21 +610,22 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
 
     #Return the corrected MET unless we are looking at MET systematic
     if not syst.startswith("MET"):
-        return pt_v2,phi_v2
+        met["pt"] = pt_v2
+        met["phi"] = phi_v2
+        return met
     else:
-        phi_factor_up = 
-        phi_factor_down =
-        pt_factor_up = 
-        pt_factor_down = 
-        if "phi" in syst:
-            if syst.endswith("Up"):
-                phi_v3 = phi_v2 + met.phi_factor_up
-            elif syst.endswith("Down"):
-                phi_v3 = phi_v2 + met.phi_factor_down
-            return pt_v2,phi_v3
-        elif "pt" in syst:
-            if syst.endswith("Up"):
-                pt_v3 = pt_v2 + met.pt_factor_up
-            elif syst.endswith("Down"):
-                pt_v3 = pt_v2 + met.pt_factor_down
-            return pt_v3,phi_v2
+        phi_factor_up = met.phiUnclusteredUp - met.phi 
+        phi_factor_down = met.phiUnclusteredDown - met.phi
+        pt_factor_up = met.ptUnclusteredUp - met.pt
+        pt_factor_down = met.ptUnclusteredDown - met.pt
+        if syst.endswith("Up"):
+            phi_v3 = phi_v2 + phi_factor_up
+            pt_v3 = pt_v2 + pt_factor_up
+        elif syste.endswith("Down"):
+            phi_v3 = phi_v2 + phi_factor_down
+            pt_v3 = pt_v2 + pt_factor_down
+        else:
+            raise Exception("Uncertainty should end in up or down!")
+        met["pt"] = pt_v3
+        met["phi"] = phi_v3
+        return met
