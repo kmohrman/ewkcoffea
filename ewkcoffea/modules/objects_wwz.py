@@ -21,7 +21,7 @@ def is_correctable_jet(jets):
     mask = (
         (jets.pt                       >  15.0) &
         (abs(jets.eta)                 <  5.1)  &
-        ((jets.chEmEF + jets.neEmEF)   <  0.9) 
+        ((jets.chEmEF + jets.neEmEF)   <  0.9)
     )
     return jets[mask]
 
