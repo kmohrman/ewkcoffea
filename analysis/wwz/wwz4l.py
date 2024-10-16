@@ -291,7 +291,7 @@ class AnalysisProcessor(processor.ProcessorABC):
         mu   = events.Muon
         tau  = events.Tau
         jets = events.Jet
-        npvs = events.PV.npvs
+        #npvs = events.PV.npvs
         if (is2022 or is2023):
             rho = events.Rho.fixedGridRhoFastjetAll
         else:
