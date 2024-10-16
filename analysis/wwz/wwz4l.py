@@ -451,13 +451,13 @@ class AnalysisProcessor(processor.ProcessorABC):
                 f"AbsoluteStat_uncorrelated_{year}",f"RelativeJEREC1_uncorrelated_{year}",f"RelativeJEREC2_uncorrelated_{year}",f"RelativePtEC1_uncorrelated_{year}",f"RelativePtEC2_uncorrelated_{year}",
                 f"TimePtEta_uncorrelated_{year}",f"RelativeSample_uncorrelated_{year}",f"RelativeStatEC_uncorrelated_{year}",f"RelativeStatFSR_uncorrelated_{year}",f"RelativeStatHF_uncorrelated_{year}",
                 f"JER_{year}",
-                f"MET_pfunclsutered_{year}",
+                f"MET_pfunclustered_{year}",
             ]
         else:
             obj_correction_systs = [
                 f"JEC_{year}",
                 f"JER_{year}",
-                f"MET_pfunclsutered_{year}",
+                f"MET_pfunclustered_{year}",
             ]
         obj_correction_systs = append_up_down_to_sys_base(obj_correction_systs)
 
@@ -484,6 +484,9 @@ class AnalysisProcessor(processor.ProcessorABC):
             veto_map_array = cor_ec.ApplyJetVetoMaps(cleanedJets, year) if (is2022 or is2023) else ak.zeros_like(met.pt)
             veto_map_mask = (veto_map_array == 0)
 
+            #Reasonable Jets
+            cleanedJets = os_ec.is_correctable_jet(cleanedJets)
+
             ##### JME Stuff #####
             cleanedJets["pt_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.pt
             cleanedJets["pt_orig"] = cleanedJets.pt
@@ -494,22 +497,17 @@ class AnalysisProcessor(processor.ProcessorABC):
             else:
                 cleanedJets["pt_gen"] =ak.ones_like(cleanedJets.pt)
 
-            # Need to broadcast some variables to have same structure
-            cleanedJets["rho"] = ak.broadcast_arrays(rho, cleanedJets.pt)[0]
-            met["npvs"] = ak.broadcast_arrays(npvs, met.pt)[0]
-            met["run"] = ak.broadcast_arrays(events.run, met.pt)[0]
+            cleanedJets["rho_event"] = ak.ones_like(cleanedJets.pt)*rho
 
             events_cache = events.caches[0] # used for storing intermediary values for corrections
             cleanedJets = cor_ec.ApplyJetCorrections(year,isData, era).build(cleanedJets,lazy_cache=events_cache,isdata=isData)
             cleanedJets = cor_ec.ApplyJetSystematics(year,cleanedJets,obj_corr_syst_var)
+            met = cor_ec.CorrectedMETFactory(cleanedJets,year,met,obj_corr_syst_var,isData)
             ##### End of JERC #####
 
             # Selecting jets and cleaning them
             cleanedJets["is_good"] = os_tc.is_tight_jet(getattr(cleanedJets, jetptname), cleanedJets.eta, cleanedJets.jetId, pt_cut=20., eta_cut=get_ec_param("wwz_eta_j_cut"), id_cut=get_ec_param("wwz_jet_id_cut"))
             goodJets = cleanedJets[cleanedJets.is_good]
-
-            # Now correct the met (need to remove bad jets before this!)
-            met = cor_ec.CorrectedMETFactory(goodJets,year,met,obj_corr_syst_var,isData)
 
             # Count jets
             njets = ak.num(goodJets)

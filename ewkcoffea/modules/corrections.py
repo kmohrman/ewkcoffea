@@ -497,7 +497,7 @@ def ApplyJetCorrections(year,isData, era):
     name_map['ptGenJet'] = 'pt_gen'
     name_map['ptRaw'] = 'pt_raw'
     name_map['massRaw'] = 'mass_raw'
-    name_map['Rho'] = 'rho'
+    name_map['Rho'] = 'rho_event'
     name_map['METpt'] = 'pt'
     name_map['METphi'] = 'phi'
     name_map['UnClusteredEnergyDeltaX'] = 'MetUnclustEnUpDeltaX'
@@ -569,24 +569,6 @@ def ApplyJetVetoMaps(jets,year):
 
 def CorrectedMETFactory(jets,year,met,syst,isdata):
 
-    if isdata:
-        key = "data"
-    else:
-        key = "mc"
-
-    if year in ['2022','2022EE','2023','2023BPix']:
-        fname = ewkcoffea_path("data/wwz_jerc/run3_met.json")
-    elif year == "2016APV":
-        fname = ewkcoffea_path("data/wwz_jerc/2016APV_jerc/met.json")
-    elif year == "2016":
-        fname = ewkcoffea_path("data/wwz_jerc/2016_jerc/met.json")
-    elif year == "2017":
-        fname = ewkcoffea_path("data/wwz_jerc/2017_jerc/met.json")
-    elif year == "2018":
-        fname = ewkcoffea_path("data/wwz_jerc/2018_jerc/met.json")
-    else:
-        raise Exception("Unrecognized year. Exciting!")
-
     #Carry the JEC/JER corrections forward with some math
     sj, cj = np.sin(jets.phi), np.cos(jets.phi)
     x = met.pt * np.cos(met.phi) + ak.sum((jets.pt - jets.pt_orig) * cj, axis=1)
@@ -594,24 +576,10 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
     pt = np.hypot(x, y)
     phi = np.arctan2(y,x)
 
-    #Bound the pt
-#    pt = ak.where(pt>6499.99,6499.99,pt)
-
-    #Grab some variables
-    npvs = met.npvs
-    run = met.run
-
-    # Grab the json
-    ceval = correctionlib.CorrectionSet.from_file(fname)
-
-    #Apply the XY corrections
-    pt_v2 = ceval[f"pt_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
-    phi_v2 = ceval[f"phi_metphicorr_puppimet_{key}"].evaluate(pt,phi,npvs,run)
-
     #Return the corrected MET unless we are looking at MET systematic
     if not syst.startswith("MET"):
-        met["pt"] = pt_v2
-        met["phi"] = phi_v2
+        met["pt"] = pt
+        met["phi"] = phi
         return met
     else:
         phi_factor_up = met.phiUnclusteredUp - met.phi 
@@ -619,11 +587,11 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
         pt_factor_up = met.ptUnclusteredUp - met.pt
         pt_factor_down = met.ptUnclusteredDown - met.pt
         if syst.endswith("Up"):
-            phi_v3 = phi_v2 + phi_factor_up
-            pt_v3 = pt_v2 + pt_factor_up
-        elif syste.endswith("Down"):
-            phi_v3 = phi_v2 + phi_factor_down
-            pt_v3 = pt_v2 + pt_factor_down
+            phi_v3 = phi + phi_factor_up
+            pt_v3 = pt + pt_factor_up
+        elif syst.endswith("Down"):
+            phi_v3 = phi + phi_factor_down
+            pt_v3 = pt + pt_factor_down
         else:
             raise Exception("Uncertainty should end in up or down!")
         met["pt"] = pt_v3
