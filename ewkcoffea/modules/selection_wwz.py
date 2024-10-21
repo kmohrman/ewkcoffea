@@ -466,9 +466,9 @@ def get_mt2(w_lep0,w_lep1,met):
     nevents = len(np.zeros_like(met))
     misspart = ak.zip(
         {
-            "pt": met.pt_new,
+            "pt": met.corrected_pt,
             "eta": 0,
-            "phi": met.phi_new,
+            "phi": met.corrected_pt,
             "mass": np.full(nevents, 0),
         },
         with_name="PtEtaPhiMLorentzVector",
@@ -492,7 +492,7 @@ def get_mt2(w_lep0,w_lep1,met):
         mass_l0, w_lep0_boosted.px, w_lep0_boosted.py,
         mass_l1, w_lep1_boosted.px, w_lep1_boosted.py,
         misspart_boosted.px, misspart_boosted.py,
-        np.zeros_like(met.pt_new), np.zeros_like(met.pt_new),
+        np.zeros_like(met.corrected_pt), np.zeros_like(met.corrected_pt),
     )
 
     return mt2_var

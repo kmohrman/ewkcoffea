@@ -77,8 +77,8 @@ SYSTS_SPECIAL = {
         "btagSFbc_uncorrelated_2022EE"     : {"yr_rel":"2022EE", "yr_notrel": ["2022"]},
         "JER_2022EE"                       : {"yr_rel":"2022EE", "yr_notrel": ["2022"]},
         "JEC_2022EE"                       : {"yr_rel":"2022EE", "yr_notrel": ["2022"]},
-        "MET_pfunclustered_2022"           : {"yr_rel":"2022", "yr_notrel": ["2022EE", "2023", "2023BPix"]},
-        "MET_pfunclustered_2022EE"         : {"yr_rel":"2022EE", "yr_notrel": ["2022", "2023", "2023BPix"]},
+        "MET_pfunclustered_2022"           : {"yr_rel":"2022", "yr_notrel": ["2022EE"]},
+        "MET_pfunclustered_2022EE"         : {"yr_rel":"2022EE", "yr_notrel": ["2022"]},
     },
 
     "y23" : {
@@ -88,8 +88,8 @@ SYSTS_SPECIAL = {
         "btagSFbc_uncorrelated_2023BPix"   : {"yr_rel":"2023BPix", "yr_notrel": ["2023"]},
         "JER_2023BPix"                     : {"yr_rel":"2023BPix", "yr_notrel": ["2023"]},
         "JEC_2023BPix"                     : {"yr_rel":"2023BPix", "yr_notrel": ["2023"]},
-        "MET_pfunclustered_2023"           : {"yr_rel":"2023", "yr_notrel": ["2022", "2022EE", "2023BPix"]},
-        "MET_pfunclustered_2023BPix"       : {"yr_rel":"2023BPix", "yr_notrel": ["2022", "2022EE", "2023"]},
+        "MET_pfunclustered_2023"           : {"yr_rel":"2023", "yr_notrel": ["2023BPix"]},
+        "MET_pfunclustered_2023BPix"       : {"yr_rel":"2023BPix", "yr_notrel": ["2023"]},
     },
 
 }
