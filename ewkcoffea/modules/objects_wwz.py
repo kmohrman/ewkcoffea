@@ -16,10 +16,10 @@ def get_cleaned_collection(obj_collection_a,obj_collection_b,drcut=0.4):
 
 ######### WWZ 4l analysis object selection #########
 
-# WWZ jet mask for basic corrections
-def is_correctable_jet(jets):
+# WWZ jet mask for JME corrections
+def get_correctable_jets(jets):
     mask = (
-        (jets.pt                       >  15.0) &
+        (jets.pt                       > 15.0) &
         (abs(jets.eta)                 <  5.1)  &
         ((jets.chEmEF + jets.neEmEF)   <  0.9)
     )
