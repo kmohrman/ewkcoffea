@@ -5,39 +5,39 @@
             null
         ],
         "njets_counts": [
-            163798.0,
+            172831.0,
             null
         ],
         "nbtagsl_counts": [
-            49791.0,
+            52470.0,
             null
         ],
         "sr_4l_sf_A_counts": [
-            5113.0,
+            5134.0,
             null
         ],
         "sr_4l_sf_B_counts": [
-            4307.0,
+            4298.0,
             null
         ],
         "sr_4l_sf_C_counts": [
-            1286.0,
+            1311.0,
             null
         ],
         "sr_4l_of_1_counts": [
-            1350.0,
+            1355.0,
             null
         ],
         "sr_4l_of_2_counts": [
-            1655.0,
+            1666.0,
             null
         ],
         "sr_4l_of_3_counts": [
-            3284.0,
+            3275.0,
             null
         ],
         "sr_4l_of_4_counts": [
-            11202.0,
+            11206.0,
             null
         ],
         "all_events_counts": [
@@ -49,31 +49,31 @@
             null
         ],
         "sr_4l_sf_counts": [
-            10706.0,
+            10743.0,
             null
         ],
         "sr_4l_of_counts": [
-            17491.0,
+            17502.0,
             null
         ],
         "sr_4l_sf_incl_counts": [
-            11168.0,
+            11184.0,
             null
         ],
         "sr_4l_of_incl_counts": [
-            20297.0,
+            20311.0,
             null
         ],
         "cr_4l_btag_of_counts": [
-            5998.0,
+            5984.0,
             null
         ],
         "cr_4l_btag_sf_offZ_met80_counts": [
-            2896.0,
+            2861.0,
             null
         ],
         "cr_4l_sf_counts": [
-            2306.0,
+            2315.0,
             null
         ],
         "cr_4l_sf_higgs_counts": [
@@ -81,359 +81,359 @@
             null
         ],
         "cr_4l_btag_of_1b_counts": [
-            4955.0,
+            4930.0,
             null
         ],
         "cr_4l_btag_of_2b_counts": [
-            1043.0,
+            1054.0,
             null
         ],
         "cr_4l_btag_sf_offZ_met80_1b_counts": [
-            2339.0,
+            2296.0,
             null
         ],
         "cr_4l_btag_sf_offZ_met80_2b_counts": [
-            557.0,
+            565.0,
             null
         ],
         "sr_4l_bdt_sf_1_counts": [
-            2468.0,
+            2467.0,
             null
         ],
         "sr_4l_bdt_sf_2_counts": [
-            1712.0,
+            1705.0,
             null
         ],
         "sr_4l_bdt_sf_3_counts": [
-            3744.0,
+            3739.0,
             null
         ],
         "sr_4l_bdt_sf_4_counts": [
-            2340.0,
+            2321.0,
             null
         ],
         "sr_4l_bdt_sf_5_counts": [
-            754.0,
+            767.0,
             null
         ],
         "sr_4l_bdt_sf_6_counts": [
-            526.0,
-            null
-        ],
-        "sr_4l_bdt_sf_7_counts": [
-            352.0,
-            null
-        ],
-        "sr_4l_bdt_sf_8_counts": [
-            354.0,
-            null
-        ],
-        "sr_4l_bdt_sf_coarse_1_counts": [
-            4180.0,
-            null
-        ],
-        "sr_4l_bdt_sf_coarse_2_counts": [
-            6084.0,
-            null
-        ],
-        "sr_4l_bdt_sf_coarse_3_counts": [
-            1280.0,
-            null
-        ],
-        "sr_4l_bdt_sf_coarse_4_counts": [
-            706.0,
-            null
-        ],
-        "sr_4l_bdt_of_1_counts": [
             529.0,
             null
         ],
+        "sr_4l_bdt_sf_7_counts": [
+            360.0,
+            null
+        ],
+        "sr_4l_bdt_sf_8_counts": [
+            372.0,
+            null
+        ],
+        "sr_4l_bdt_sf_coarse_1_counts": [
+            4172.0,
+            null
+        ],
+        "sr_4l_bdt_sf_coarse_2_counts": [
+            6060.0,
+            null
+        ],
+        "sr_4l_bdt_sf_coarse_3_counts": [
+            1296.0,
+            null
+        ],
+        "sr_4l_bdt_sf_coarse_4_counts": [
+            732.0,
+            null
+        ],
+        "sr_4l_bdt_of_1_counts": [
+            545.0,
+            null
+        ],
         "sr_4l_bdt_of_2_counts": [
-            5330.0,
+            5375.0,
             null
         ],
         "sr_4l_bdt_of_3_counts": [
-            6765.0,
+            6727.0,
             null
         ],
         "sr_4l_bdt_of_4_counts": [
-            4467.0,
+            4462.0,
             null
         ],
         "sr_4l_bdt_of_5_counts": [
-            924.0,
+            923.0,
             null
         ],
         "sr_4l_bdt_of_6_counts": [
-            512.0,
+            520.0,
             null
         ],
         "sr_4l_bdt_of_7_counts": [
-            939.0,
+            938.0,
             null
         ],
         "sr_4l_bdt_of_8_counts": [
-            831.0,
+            821.0,
             null
         ],
         "sr_4l_bdt_of_coarse_1_counts": [
-            5859.0,
+            5920.0,
             null
         ],
         "sr_4l_bdt_of_coarse_2_counts": [
-            11232.0,
+            11189.0,
             null
         ],
         "sr_4l_bdt_of_coarse_3_counts": [
-            1436.0,
+            1443.0,
             null
         ],
         "sr_4l_bdt_of_coarse_4_counts": [
-            1770.0,
+            1759.0,
             null
         ],
         "sr_4l_bdt_sf_wwz_counts": [
-            10264.0,
+            10232.0,
             null
         ],
         "sr_4l_bdt_sf_zh_counts": [
-            1986.0,
+            2028.0,
             null
         ],
         "sr_4l_bdt_of_wwz_counts": [
-            17091.0,
+            17109.0,
             null
         ],
         "sr_4l_bdt_of_zh_counts": [
-            3206.0,
+            3202.0,
             null
         ],
         "sr_4l_bdt_sf_presel_counts": [
-            18795.0,
+            18841.0,
             null
         ],
         "sr_4l_bdt_sf_trn_counts": [
-            12250.0,
+            12260.0,
             null
         ],
         "sr_4l_bdt_of_presel_counts": [
-            20297.0,
+            20311.0,
             null
         ],
         "sr_4l_bdt_of_trn_counts": [
-            20297.0,
+            20311.0,
             null
         ],
         "sr_4l_sf_A": [
-            0.5370507869364496,
+            0.5398037105925644,
             null
         ],
         "sr_4l_sf_B": [
-            0.4589302357879887,
+            0.4592229834990371,
             null
         ],
         "sr_4l_sf_C": [
-            0.1348995826859627,
+            0.13721882428112775,
             null
         ],
         "sr_4l_of_1": [
-            0.14223220133879066,
+            0.14221155656696993,
             null
         ],
         "sr_4l_of_2": [
-            0.17258351462813595,
+            0.17420111464510427,
             null
         ],
         "sr_4l_of_3": [
-            0.3476936497562283,
+            0.34730875296297625,
             null
         ],
         "sr_4l_of_4": [
-            1.2025376838715256,
+            1.2053781113378388,
             null
         ],
         "all_events": [
-            14.100223077922767,
+            14.181042743629806,
             null
         ],
         "4l_presel": [
-            7.01473138054194,
+            7.00990563871375,
             null
         ],
         "sr_4l_sf": [
-            1.1308806054104008,
+            1.1362455183727294,
             null
         ],
         "sr_4l_of": [
-            1.8650470495946838,
+            1.8690995355128912,
             null
         ],
         "sr_4l_sf_incl": [
-            1.1780834490671108,
+            1.181762750091165,
             null
         ],
         "sr_4l_of_incl": [
-            2.1559195230914057,
+            2.160325460966741,
             null
         ],
         "cr_4l_btag_of": [
-            0.9001157735183307,
+            0.8953843507008761,
             null
         ],
         "cr_4l_btag_sf_offZ_met80": [
-            0.43082878382339646,
+            0.4257742596212849,
             null
         ],
         "cr_4l_sf": [
-            0.24336661604958704,
+            0.24671937979037553,
             null
         ],
         "cr_4l_sf_higgs": [
-            0.006021977849117776,
+            0.005832910517202073,
             null
         ],
         "cr_4l_btag_of_1b": [
-            0.6978399201848687,
+            0.6908562306591697,
             null
         ],
         "cr_4l_btag_of_2b": [
-            0.20227585333346199,
+            0.20452812004170703,
             null
         ],
         "cr_4l_btag_sf_offZ_met80_1b": [
-            0.3254536419412544,
+            0.3188935903281541,
             null
         ],
         "cr_4l_btag_sf_offZ_met80_2b": [
-            0.10537514188214202,
+            0.10688066929313099,
             null
         ],
         "sr_4l_bdt_sf_1": [
-            0.2642063780706616,
+            0.2636752506806596,
             null
         ],
         "sr_4l_bdt_sf_2": [
-            0.18676224810657654,
+            0.1857463594544205,
             null
         ],
         "sr_4l_bdt_sf_3": [
-            0.3969673432202301,
+            0.3957638624863362,
             null
         ],
         "sr_4l_bdt_sf_4": [
-            0.2491080094320574,
+            0.24696040494768204,
             null
         ],
         "sr_4l_bdt_sf_5": [
-            0.07833899732082461,
+            0.08050006053007966,
             null
         ],
         "sr_4l_bdt_sf_6": [
-            0.054256958645741454,
+            0.054267729677532975,
             null
         ],
         "sr_4l_bdt_sf_7": [
-            0.03551048434010217,
+            0.035835003311641744,
             null
         ],
         "sr_4l_bdt_sf_8": [
-            0.03793077775715633,
+            0.03978428195170595,
             null
         ],
         "sr_4l_bdt_sf_coarse_1": [
-            0.4509686261772374,
+            0.4494216101350793,
             null
         ],
         "sr_4l_bdt_sf_coarse_2": [
-            0.6460753526522878,
+            0.6427242674340186,
             null
         ],
         "sr_4l_bdt_sf_coarse_3": [
-            0.13259595596656618,
+            0.1347677902076128,
             null
         ],
         "sr_4l_bdt_sf_coarse_4": [
-            0.07344126209725856,
+            0.07561928526334771,
             null
         ],
         "sr_4l_bdt_of_1": [
-            0.060444649383235044,
+            0.06349342439593587,
             null
         ],
         "sr_4l_bdt_of_2": [
-            0.5864509237804126,
+            0.5900264018392198,
             null
         ],
         "sr_4l_bdt_of_3": [
-            0.7143464774085503,
+            0.7133082241218205,
             null
         ],
         "sr_4l_bdt_of_4": [
-            0.4609869620281025,
+            0.4608612092597337,
             null
         ],
         "sr_4l_bdt_of_5": [
-            0.09950571041798731,
+            0.09884328206233862,
             null
         ],
         "sr_4l_bdt_of_6": [
-            0.053121112004411,
+            0.05439439178683764,
             null
         ],
         "sr_4l_bdt_of_7": [
-            0.09684252939606809,
+            0.09571206691467131,
             null
         ],
         "sr_4l_bdt_of_8": [
-            0.0842211586726327,
+            0.08368646058617957,
             null
         ],
         "sr_4l_bdt_of_coarse_1": [
-            0.6468955731636475,
+            0.6535198262351553,
             null
         ],
         "sr_4l_bdt_of_coarse_2": [
-            1.175333439436654,
+            1.1741694333815549,
             null
         ],
         "sr_4l_bdt_of_coarse_3": [
-            0.15262682242239822,
+            0.15323767384917605,
             null
         ],
         "sr_4l_bdt_of_coarse_4": [
-            0.18106368806870082,
+            0.17939852750085086,
             null
         ],
         "sr_4l_bdt_sf_wwz": [
-            1.0970439788295252,
+            1.0921458775690982,
             null
         ],
         "sr_4l_bdt_sf_zh": [
-            0.20603721806382472,
+            0.2103870754709605,
             null
         ],
         "sr_4l_bdt_of_wwz": [
-            1.8222290126003036,
+            1.827689259616713,
             null
         ],
         "sr_4l_bdt_of_zh": [
-            0.3336905104910987,
+            0.3326362013500267,
             null
         ],
         "sr_4l_bdt_sf_presel": [
-            2.001714325321146,
+            2.007400424261872,
             null
         ],
         "sr_4l_bdt_sf_trn": [
-            1.303081196893349,
+            1.302532953040058,
             null
         ],
         "sr_4l_bdt_of_presel": [
-            2.1559195230914057,
+            2.160325460966741,
             null
         ],
         "sr_4l_bdt_of_trn": [
-            2.1559195230914057,
+            2.160325460966741,
             null
         ]
     }
