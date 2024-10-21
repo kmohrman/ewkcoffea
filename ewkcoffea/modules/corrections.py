@@ -579,8 +579,8 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
 
     #Return the corrected MET unless we are looking at MET systematic
     if not syst.startswith("MET"):
-        met["corrected_pt"] = pt
-        met["corrected_phi"] = phi
+        met["pt"] = pt
+        met["phi"] = phi
         return met
     else:
         phi_factor_up = met.phiUnclusteredUp - met.phi
@@ -595,6 +595,6 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
             pt_v2 = pt + pt_factor_down
         else:
             raise Exception("Uncertainty should end in up or down!")
-        met["corrected_pt"] = pt_v2
-        met["corrected_phi"] = phi_v2
+        met["pt"] = pt_v2
+        met["phi"] = phi_v2
         return met

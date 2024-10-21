@@ -504,6 +504,7 @@ class AnalysisProcessor(processor.ProcessorABC):
             correctionJets = os_ec.get_correctable_jets(cleanedJets)
 
             # Apply MET Corrections and Uncertainties
+            met["pt_orig"] = met.pt
             met = cor_ec.CorrectedMETFactory(correctionJets,year,met,obj_corr_syst_var,isData)
 
             ##### End of JERC #####
@@ -672,9 +673,9 @@ class AnalysisProcessor(processor.ProcessorABC):
             # Make masks for the SF regions
             w_candidates_mll_far_from_z = ak.fill_none(abs(mll_wl0_wl1 - get_ec_param("zmass")) > 10.0,False) # Will enforce this for SF in the PackedSelection
             ptl4 = (l0+l1+l2+l3).pt
-            sf_A = ak.fill_none(met.corrected_pt >= 120.0,False) # This should never be None, but just keep syntax same as other categories
-            sf_B = ak.fill_none((met.corrected_pt >= 65.0) & (met.corrected_pt < 120.0) & (ptl4 >= 70.0),False)
-            sf_C = ak.fill_none((met.corrected_pt >= 65.0) & (met.corrected_pt < 120.0) & (ptl4 >= 40.0) & (ptl4 < 70.0),False)
+            sf_A = ak.fill_none(met.pt >= 120.0,False) # This should never be None, but just keep syntax same as other categories
+            sf_B = ak.fill_none((met.pt >= 65.0) & (met.pt < 120.0) & (ptl4 >= 70.0),False)
+            sf_C = ak.fill_none((met.pt >= 65.0) & (met.pt < 120.0) & (ptl4 >= 40.0) & (ptl4 < 70.0),False)
 
             # Make masks for the OF regions
             of_1 = ak.fill_none((mll_wl0_wl1 >= 0.0)  & (mll_wl0_wl1 < 40.0),False)
@@ -698,8 +699,8 @@ class AnalysisProcessor(processor.ProcessorABC):
             mll_01 = (l0+l1).mass
             mllll = (l0+l1+l2+l3).mass
             scalarptsum_lep = l0.pt + l1.pt + l2.pt + l3.pt
-            scalarptsum_lepmet = l0.pt + l1.pt + l2.pt + l3.pt + met.corrected_pt
-            scalarptsum_lepmetjet = l0.pt + l1.pt + l2.pt + l3.pt + met.corrected_pt + ak.sum(goodJets.pt,axis=-1)
+            scalarptsum_lepmet = l0.pt + l1.pt + l2.pt + l3.pt + met.pt
+            scalarptsum_lepmetjet = l0.pt + l1.pt + l2.pt + l3.pt + met.pt + ak.sum(goodJets.pt,axis=-1)
             scalarptsum_jet = ak.sum(goodJets.pt,axis=-1)
 
             # Get lep from Z
@@ -747,8 +748,8 @@ class AnalysisProcessor(processor.ProcessorABC):
             # Put the variables into a dictionary for easy access later
             dense_variables_dict = {
                 "mt2" : mt2_val,
-                "met" : met.corrected_pt,
-                "metphi" : met.corrected_phi,
+                "met" : met.pt,
+                "metphi" : met.phi,
                 "ptl4" : ptl4,
                 "scalarptsum_lep" : scalarptsum_lep,
                 "scalarptsum_lepmet" : scalarptsum_lepmet,
@@ -970,12 +971,12 @@ class AnalysisProcessor(processor.ProcessorABC):
             lepflav_4e = ((abs(l0.pdgId)==11) & (abs(l1.pdgId)==11) & (abs(l2.pdgId)==11) & (abs(l3.pdgId)==11))
             lepflav_4m = ((abs(l0.pdgId)==13) & (abs(l1.pdgId)==13) & (abs(l2.pdgId)==13) & (abs(l3.pdgId)==13))
             selections.add("cr_4l_btag_of",            (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_of))
-            selections.add("cr_4l_btag_sf_offZ_met80", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.corrected_pt > 80.0)))
+            selections.add("cr_4l_btag_sf_offZ_met80", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.pt > 80.0)))
 
             selections.add("cr_4l_btag_of_1b",            (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_of & (nbtagsl==1)))
             selections.add("cr_4l_btag_of_2b",            (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_of & (nbtagsl>=2)))
-            selections.add("cr_4l_btag_sf_offZ_met80_1b", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.corrected_pt > 80.0) & (nbtagsl==1)))
-            selections.add("cr_4l_btag_sf_offZ_met80_2b", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.corrected_pt > 80.0) & (nbtagsl>=2)))
+            selections.add("cr_4l_btag_sf_offZ_met80_1b", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.pt > 80.0) & (nbtagsl==1)))
+            selections.add("cr_4l_btag_sf_offZ_met80_2b", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_atleast1loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.pt > 80.0) & (nbtagsl>=2)))
 
             selections.add("cr_4l_sf", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_exactly0loose & events.wwz_presel_sf & (~w_candidates_mll_far_from_z)))
             # H->ZZ validation region: note, this is not enforced to be orthogonal to the SR, but it has effectively zero signal in it
@@ -997,7 +998,7 @@ class AnalysisProcessor(processor.ProcessorABC):
 
             selections.add("sr_4l_sf", selections.any("sr_4l_sf_A","sr_4l_sf_B","sr_4l_sf_C"))
             selections.add("sr_4l_of", selections.any("sr_4l_of_1","sr_4l_of_2","sr_4l_of_3","sr_4l_of_4"))
-            selections.add("sr_4l_sf_incl", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_exactly0loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.corrected_pt >= 65.0))) # Inclusive over SF sr (only applying cuts that are applied to all SF SRs), just use for visualization
+            selections.add("sr_4l_sf_incl", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_exactly0loose & events.wwz_presel_sf & w_candidates_mll_far_from_z & (met.pt >= 65.0))) # Inclusive over SF sr (only applying cuts that are applied to all SF SRs), just use for visualization
             selections.add("sr_4l_of_incl", (veto_map_mask & pass_trg & events.is4lWWZ & bmask_exactly0loose & events.wwz_presel_of)) # Inclusive over OF sr (only applying cuts that are applied to all OF SRs), just use for visualization
 
             # For BDT SRs
