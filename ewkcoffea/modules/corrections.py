@@ -572,8 +572,8 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
 
     #Carry the JEC/JER corrections forward with some math
     sj, cj = np.sin(jets.phi), np.cos(jets.phi)
-    x = met.pt * np.cos(met.phi) + ak.sum((jets.pt - jets.pt_orig) * cj, axis=1)
-    y = met.pt * np.sin(met.phi) + ak.sum((jets.pt - jets.pt_orig) * sj, axis=1)
+    x = met.pt_original * np.cos(met.phi_original) - ak.sum((jets.pt - jets.pt_original) * cj, axis=1)
+    y = met.pt_original * np.sin(met.phi_original) - ak.sum((jets.pt - jets.pt_original) * sj, axis=1)
     pt = np.hypot(x, y)
     phi = np.arctan2(y,x)
 
@@ -583,10 +583,10 @@ def CorrectedMETFactory(jets,year,met,syst,isdata):
         met["phi"] = phi
         return met
     else:
-        phi_factor_up = met.phiUnclusteredUp - met.phi
-        phi_factor_down = met.phiUnclusteredDown - met.phi
-        pt_factor_up = met.ptUnclusteredUp - met.pt
-        pt_factor_down = met.ptUnclusteredDown - met.pt
+        phi_factor_up = met.phiUnclusteredUp - met.phi_original
+        phi_factor_down = met.phiUnclusteredDown - met.phi_original
+        pt_factor_up = met.ptUnclusteredUp - met.pt_original
+        pt_factor_down = met.ptUnclusteredDown - met.pt_original
         if syst.endswith("Up"):
             phi_v2 = phi + phi_factor_up
             pt_v2 = pt + pt_factor_up

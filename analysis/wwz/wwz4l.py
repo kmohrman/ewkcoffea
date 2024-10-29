@@ -465,6 +465,23 @@ class AnalysisProcessor(processor.ProcessorABC):
         # Otherwise loop juse once, for nominal
         else: obj_corr_syst_var_list = ['nominal']
 
+        # Remove Jets that match our leptons (this does not depend on Jet pT)
+        cleanedJets = os_ec.get_cleaned_collection(l_wwz_t,jets)
+        jetptname = "pt_nom" if hasattr(cleanedJets, "pt_nom") else "pt"
+
+        # JME Properties (OG Values)
+        cleanedJets["pt_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.pt
+        cleanedJets["pt_original"] = cleanedJets.pt
+        cleanedJets["mass_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.mass
+        cleanedJets["rho"] = ak.broadcast_arrays(rho, cleanedJets.pt)[0]
+        met["pt_original"] = met.pt
+        met["phi_original"] = met.phi
+
+        if not isData:
+            cleanedJets["pt_gen"] =ak.values_astype(ak.fill_none(cleanedJets.matched_gen.pt, 0), np.float32)
+        else:
+            cleanedJets["pt_gen"] =ak.ones_like(cleanedJets.pt)
+
         # Loop over the list of systematic variations (that impact object kinematics) that we've constructed
         for obj_corr_syst_var in obj_corr_syst_var_list:
             # Make a copy of the base weights object, so that each time through the loop we do not double count systs
@@ -473,23 +490,6 @@ class AnalysisProcessor(processor.ProcessorABC):
 
 
             #################### Jets ####################
-
-            # Clean with dr (though another option is to use jetIdx)
-            cleanedJets = os_ec.get_cleaned_collection(l_wwz_t,jets)
-            jetptname = "pt_nom" if hasattr(cleanedJets, "pt_nom") else "pt"
-
-            ##### JME Stuff #####
-            cleanedJets["pt_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.pt
-            cleanedJets["pt_orig"] = cleanedJets.pt
-            cleanedJets["mass_raw"] = (1 - cleanedJets.rawFactor)*cleanedJets.mass
-
-            if not isData:
-                cleanedJets["pt_gen"] =ak.values_astype(ak.fill_none(cleanedJets.matched_gen.pt, 0), np.float32)
-            else:
-                cleanedJets["pt_gen"] =ak.ones_like(cleanedJets.pt)
-
-            # Need to broadcast Rho to have same structure as cleanedJets
-            cleanedJets["rho"] = ak.broadcast_arrays(rho, cleanedJets.pt)[0]
 
             events_cache = events.caches[0] # used for storing intermediary values for corrections
             cleanedJets = cor_ec.ApplyJetCorrections(year,isData, era).build(cleanedJets,lazy_cache=events_cache,isdata=isData)
@@ -504,7 +504,6 @@ class AnalysisProcessor(processor.ProcessorABC):
             correctionJets = os_ec.get_correctable_jets(cleanedJets)
 
             # Apply MET Corrections and Uncertainties
-            met["pt_orig"] = met.pt
             met = cor_ec.CorrectedMETFactory(correctionJets,year,met,obj_corr_syst_var,isData)
 
             ##### End of JERC #####
