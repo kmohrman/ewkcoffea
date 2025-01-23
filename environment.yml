@@ -1,17 +1,14 @@
-name: coffea-env
+name: coffea_202X_skimming
 channels:
   - conda-forge
 dependencies:
   - conda-forge::python=3.9
-  - numpy=1.23.5
-  - coffea==0.7.22
+  - numpy
+  - coffea
   - ndcctools
   - conda-pack
   - dill
   - xrootd
   - git
   - pyyaml
-  - conda-forge::root
-  - mpltern
-  - scikit-learn
-  - conda-forge::setuptools==70.3.0
+  - fsspec-xrootd
