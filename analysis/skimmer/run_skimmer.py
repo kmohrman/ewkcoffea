@@ -2,6 +2,10 @@ import yaml
 import json
 import os
 
+import uproot
+from coffea.nanoevents import NanoAODSchema
+from coffea.dataset_tools import preprocess, apply_to_fileset
+
 import skimmer_processor as sp
 
 def read_file(filename):
@@ -11,7 +15,9 @@ def read_file(filename):
     return content
 
 
-def run():
+if __name__ == '__main__':
+
+    ###### Get info from the input jsons ######
 
     # Get the prefix and json names from the cfg file
     prefix = ""
@@ -41,23 +47,14 @@ def run():
             fullpath = prefix+filename
             dataset_dict[tag]["files"][fullpath] = "Events"
     print(dataset_dict)
-    #exit()
 
-    dataset_runnable, _ = sp.preprocess(
+
+    ###### Run ######
+
+    # Run preprocess
+    print("Running preprocessing")  # To obtain file splitting
+    dataset_runnable, _ = preprocess(
         dataset_dict,
-        #{
-        #    "dataset1": {
-        #        "files": {
-        #            #"output_1.root": "Events" for i in range(0, 100) # How ever many 
-        #            "output_1.root": "Events" ,
-        #        }
-        #    },
-        #    #"dataset2": {
-        #    #    "files": {
-        #    #        f"path_to_file_{index}.root": "Events" for i in range(0, 200) # Another data set
-        #    #    }
-        #    #}
-        #},
         align_clusters=False,
         step_size=100_000,  # You may want to set this to something slightly smaller to avoid loading too much in memory
         files_per_batch=1,
@@ -65,6 +62,25 @@ def run():
         save_form=False,
     )
 
-    sp.analysis_processor(dataset_runnable)
 
-run()
+    # Run apply_to_fileset
+    print("Computing dask task graph")
+    skimmed_dict = apply_to_fileset(
+        sp.make_skimmed_events, dataset_runnable, schemaclass=NanoAODSchema
+    )
+
+
+    # Executing task graph and saving
+    print("Executing task graph and saving")
+    for dataset, skimmed in skimmed_dict.items():
+        skimmed = sp.uproot_writeable(skimmed)
+        skimmed = skimmed.repartition(
+            n_to_one=1_000
+        )  # Reparititioning so that output file contains ~100_000 eventspartition
+        uproot.dask_write(
+            skimmed,
+            destination="skimtest/",
+            prefix=f"{dataset}/skimmed",
+        )
+
+
